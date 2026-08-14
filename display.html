@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ARGUS DISPLAY</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+background:black;
+color:#0ff;
+font-family:monospace;
+width:100vw;
+height:100vh;
+overflow:hidden;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+}
+
+#logo{
+position:fixed;
+top:20px;
+left:20px;
+width:60px;
+z-index:9999;
+}
+
+#standby{
+text-align:center;
+}
+
+#standbyLogo{
+
+width:220px;
+height:auto;
+
+margin-bottom:30px;
+
+filter:
+drop-shadow(0 0 20px #0ff)
+drop-shadow(0 0 50px #0ff);
+
+animation:
+argusGlow 2s infinite;
+
+}
+
+#standby{
+text-align:center;
+}
+
+#title{
+font-size:80px;
+letter-spacing:10px;
+text-shadow:
+0 0 20px #0ff,
+0 0 40px #0ff;
+}
+
+#sub{
+margin-top:20px;
+font-size:28px;
+letter-spacing:6px;
+}
+
+#messageScreen{
+display:none;
+width:90%;
+max-width:1200px;
+font-size:42px;
+line-height:1.8;
+text-align:center;
+text-shadow:0 0 15px #0ff;
+}
+
+#mainScreen{
+display:none;
+width:100%;
+height:100%;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+}
+
+#hintImage{
+max-width:80%;
+max-height:60vh;
+margin-bottom:30px;
+}
+
+#timer{
+font-size:120px;
+text-shadow:
+0 0 20px #0ff,
+0 0 40px #0ff;
+}
+
+.alarm{
+background:#220000;
+color:red;
+animation:blink .6s infinite;
+}
+
+@keyframes argusGlow{
+
+0%{
+opacity:0.6;
+transform:scale(1);
+}
+
+50%{
+opacity:1;
+transform:scale(1.03);
+}
+
+100%{
+opacity:0.6;
+transform:scale(1);
+}
+
+}
+
+@keyframes blink{
+
+0%{
+opacity:1;
+}
+
+50%{
+opacity:0.3;
+}
+
+100%{
+opacity:1;
+}
+
+}
+
+#alarmText{
+display:none;
+font-size:80px;
+text-align:center;
+text-shadow:
+0 0 20px red,
+0 0 40px red;
+}
+
+#messageLogo{
+
+width:250px;
+height:auto;
+
+margin-bottom:40px;
+
+filter:
+drop-shadow(0 0 20px #0ff)
+drop-shadow(0 0 50px #0ff);
+
+}
+
+</style>
+</head>
+<body>
+
+<img id="logo" src="argus.png">
+
+<!-- 待機画面 -->
+<div id="standby">
+
+<img
+id="standbyLogo"
+src="argus.png">
+
+<div id="title">
+ARGUS
+</div>
+
+<div id="sub">
+STANDBY
+</div>
+
+</div>
+
+<!-- タイプライター -->
+<div id="messageScreen">
+
+<img
+id="messageLogo"
+src="argus.png">
+
+<div id="messageText"></div>
+
+</div>
+
+<!-- メイン画面 -->
+<div id="mainScreen">
+
+<div id="countdownScreen"
+style="
+display:none;
+font-size:200px;
+text-shadow:
+0 0 20px #0ff,
+0 0 50px #0ff;
+">
+3
+</div>
+
+<img
+id="hintImage"
+src="">
+
+<div id="timer">
+01:00
+</div>
+
+</div>
+
+<!-- タイムアップ -->
+<div id="alarmText">
+
+TIME OVER
+
+</div>
+
+</body>
+<script>
+
+const SYSTEM_URL =
+"https://script.google.com/macros/s/AKfycby5CFBJnb6iIUZexVPDaut5_lriD2k3ebFsjf5nyOfuNBTWAZzsKPWixfGBKIf9JAr2/exec";
+
+let missionStarted = false;
+let timerInterval = null;
+
+const messages = [
+"こんにちは。私はMSSのAI、ARGUSです。",
+"爆弾を解除するためのヒントを入手しました。",
+"カウントダウンが終わるまでに解除するか脱出してください。"
+];
+
+async function checkSystem(){
+
+  try{
+
+    const res =
+      await fetch(
+        SYSTEM_URL +
+        "?t=" +
+        Date.now()
+      );
+
+    const state =
+      await res.json();
+
+    if(
+      state.active &&
+      !missionStarted
+    ){
+
+      missionStarted = true;
+
+      startMission(
+        state.image,
+        Number(state.endTime)
+      );
+
+    }
+
+    if(
+      !state.active &&
+      missionStarted
+    ){
+
+      location.reload();
+
+    }
+
+  }catch(e){
+
+    console.log(e);
+
+  }
+
+}
+
+async function startMission(
+  image,
+  endTime
+){
+
+  document
+    .getElementById("standby")
+    .style.display = "none";
+
+  document
+    .getElementById("messageScreen")
+    .style.display = "block";
+
+   await typeMessages();
+
+   document
+  .getElementById("messageScreen")
+  .style.display = "none";
+
+   await preCountdown();
+
+   const realEndTime =
+   Date.now() + 60000;
+
+   await fetch(
+  SYSTEM_URL,
+  {
+    method:"POST",
+    body:JSON.stringify({
+      action:"start",
+      group:0,
+      image:image,
+      endTime:realEndTime
+    })
+    }
+    );
+
+    document
+  .getElementById("mainScreen")
+  .style.display = "flex";
+
+   document
+  .getElementById("hintImage")
+  .src = image;
+
+   startTimer(realEndTime);
+
+}
+
+async function typeMessages(){
+
+  const box =
+  document.getElementById(
+  "messageText"
+  );
+
+  box.innerHTML = "";
+
+  for(
+    let line of messages
+  ){
+
+    await typeLine(
+      line,
+      box
+    );
+
+    box.innerHTML +=
+      "<br><br>";
+
+    await wait(500);
+
+  }
+
+}
+
+function typeLine(
+  text,
+  box
+){
+
+  return new Promise(resolve=>{
+
+    let i = 0;
+
+    const interval =
+      setInterval(()=>{
+
+        box.innerHTML +=
+          text[i];
+
+        i++;
+
+        if(
+          i >= text.length
+        ){
+
+          clearInterval(
+            interval
+          );
+
+          resolve();
+
+        }
+
+      },60);
+
+  });
+
+}
+
+function wait(ms){
+
+  return new Promise(
+    r=>setTimeout(r,ms)
+  );
+
+}
+
+function startTimer(
+  endTime
+){
+
+  clearInterval(
+    timerInterval
+  );
+
+  timerInterval =
+    setInterval(()=>{
+
+      const remain =
+        endTime -
+        Date.now();
+
+      if(remain <= 0){
+
+        clearInterval(
+          timerInterval
+        );
+
+        timeOver();
+
+        return;
+
+      }
+
+      const sec =
+        Math.floor(
+          remain / 1000
+        );
+
+      const min =
+        String(
+          Math.floor(
+            sec / 60
+          )
+        ).padStart(2,"0");
+
+      const s =
+        String(
+          sec % 60
+        ).padStart(2,"0");
+
+      document
+        .getElementById(
+          "timer"
+        )
+        .textContent =
+          min + ":" + s;
+
+    },100);
+
+}
+
+function timeOver(){
+
+  document.body
+    .classList.add(
+      "alarm"
+    );
+
+  document
+    .getElementById(
+      "mainScreen"
+    )
+    .style.display =
+      "none";
+
+  document
+    .getElementById(
+      "alarmText"
+    )
+    .style.display =
+      "block";
+
+}
+
+async function resetSystem(){
+
+  await fetch(
+    SYSTEM_URL,
+    {
+      method:"POST",
+
+      body:JSON.stringify({
+
+        action:"reset"
+
+      })
+    }
+  );
+
+  location.reload();
+
+}
+
+document.addEventListener(
+  "keydown",
+  e=>{
+
+    if(
+      e.shiftKey &&
+      e.key.toUpperCase()
+      === "B"
+    ){
+
+      resetSystem();
+
+    }
+
+  }
+);
+
+setInterval(
+  checkSystem,
+  1000
+);
+
+checkSystem();
+
+async function preCountdown(){
+
+  const screen =
+    document.getElementById(
+      "countdownScreen"
+    );
+
+  screen.style.display =
+    "block";
+
+  for(
+    let i=3;
+    i>=1;
+    i--
+  ){
+
+    screen.textContent = i;
+
+    await wait(1000);
+
+  }
+
+  screen.textContent =
+    "START";
+
+  await wait(1000);
+
+  screen.style.display =
+    "none";
+
+}
+
+</script>
