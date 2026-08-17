@@ -452,23 +452,28 @@ async function watchSystem(){
       await res.json();
 
     if(
-      state.active &&
-      !started &&
-      Number(state.endTime) > 0
-    ){
+  state.active &&
+  !started &&
+  Number(state.endTime) > 0
+){
 
-      started = true;
+  started = true;
 
-      document
-        .getElementById("timer")
-        .style.fontSize =
-          "90px";
+  document
+    .getElementById("timer")
+    .style.fontSize =
+      "90px";
 
-      startTimer(
-        Number(state.endTime)
-      );
+  document
+    .getElementById("timer")
+    .textContent =
+      "01:00";
 
-    }
+  startTimer(
+    Number(state.endTime)
+  );
+
+}
 
     if(
       !state.active &&
