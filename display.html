@@ -216,9 +216,8 @@ const messages = [
 "カウントダウンが終わるまでに解除するか脱出してください。"
 ];
 
-async function startMission(
-  image
-)
+async function checkSystem(){
+
   try{
 
     const res =
@@ -239,8 +238,9 @@ async function startMission(
       missionStarted = true;
 
       startMission(
-      state.image
+        state.image
       );
+
     }
 
     if(
@@ -261,8 +261,7 @@ async function startMission(
 }
 
 async function startMission(
-  image,
-  endTime
+  image
 ){
 
   document
