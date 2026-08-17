@@ -239,6 +239,7 @@ const SYSTEM_URL =
 let currentPlayer = null;
 let currentGroup = 0;
 let timerInterval = null;
+let started = false;
 
 async function loadPlayer(){
 
@@ -273,18 +274,18 @@ async function loadPlayer(){
       document.getElementById("limitInput").value
     );
 
-  if(player.score >= limit){
-    currentGroup = 1;
-  }else{
-    currentGroup = 0;
-  }
+  currentGroup =
+    player.score >= limit
+    ? 1
+    : 0;
 
   document.getElementById("playerBox")
     .style.display = "block";
 
   document.getElementById("codename")
     .textContent =
-      "CODE NAME : " + player.name;
+      "CODE NAME : " +
+      player.name;
 
   document.getElementById("score")
     .textContent =
@@ -292,7 +293,8 @@ async function loadPlayer(){
 
   document.getElementById("group")
     .textContent =
-      "GROUP : " + currentGroup;
+      "GROUP : " +
+      currentGroup;
 
 }
 
@@ -303,20 +305,21 @@ async function saveLimit(){
       document.getElementById("limitInput").value
     );
 
-  await fetch(SYSTEM_URL,{
+  await fetch(
+    SYSTEM_URL,
+    {
+      method:"POST",
 
-    method:"POST",
+      body:JSON.stringify({
 
-    body:JSON.stringify({
+        action:"limits",
 
-      action:"limits",
+        limit0:0,
+        limit1:limit
 
-      limit0:0,
-      limit1:limit
-
-    })
-
-  });
+      })
+    }
+  );
 
   alert("保存しました");
 
@@ -334,36 +337,38 @@ async function startMission(){
       ? "0_1.png"
       : "1_1.png";
 
+  await fetch(
+    SYSTEM_URL,
+    {
+      method:"POST",
+
+      body:JSON.stringify({
+
+        action:"start",
+
+        group:currentGroup,
+
+        image:image,
+
+        endTime:0
+
+      })
+    }
+  );
+
   document.getElementById("running")
-  .style.display = "flex";
+    .style.display = "flex";
 
   document.getElementById("runImage")
-  .src = image;
+    .src = image;
 
-  await preCountdown();
+  document.getElementById("timer")
+    .textContent =
+      "WAITING...";
 
-   const endTime =
-  Date.now() + 60000;
+  started = false;
 
-  await fetch(SYSTEM_URL,{
-
-  method:"POST",
-
-  body:JSON.stringify({
-
-    action:"start",
-
-    group:currentGroup,
-
-    image:image,
-
-    endTime:endTime
-
-  })
-
-});
-
-startTimer(endTime);
+}
 
 function startTimer(endTime){
 
@@ -377,16 +382,22 @@ function startTimer(endTime){
 
       if(remain <= 0){
 
-        document.getElementById("timer")
-          .textContent = "00:00";
+        document
+          .getElementById("timer")
+          .textContent =
+            "00:00";
 
-        clearInterval(timerInterval);
+        clearInterval(
+          timerInterval
+        );
 
         return;
       }
 
       const sec =
-        Math.floor(remain / 1000);
+        Math.floor(
+          remain / 1000
+        );
 
       const min =
         String(
@@ -398,68 +409,91 @@ function startTimer(endTime){
           sec % 60
         ).padStart(2,"0");
 
-      document.getElementById("timer")
+      document
+        .getElementById("timer")
         .textContent =
           min + ":" + s;
 
-    },1000);
+    },100);
 
 }
 
 async function resetMission(){
 
-  await fetch(SYSTEM_URL,{
+  await fetch(
+    SYSTEM_URL,
+    {
+      method:"POST",
 
-    method:"POST",
+      body:JSON.stringify({
 
-    body:JSON.stringify({
+        action:"reset"
 
-      action:"reset"
+      })
+    }
+  );
 
-    })
-
-  });
-
-  clearInterval(timerInterval);
-
-  document.getElementById("running")
-    .style.display = "none";
-
-  document.getElementById("playerBox")
-    .style.display = "none";
-
-  document.getElementById("rowInput")
-    .value = "";
+  location.reload();
 
 }
 
-async function preCountdown(){
+async function watchSystem(){
 
-  document.getElementById("timer")
-    .style.fontSize = "180px";
+  try{
 
-  for(let i=3;i>=1;i--){
+    const res =
+      await fetch(
+        SYSTEM_URL +
+        "?t=" +
+        Date.now()
+      );
 
-    document.getElementById("timer")
-      .textContent = i;
+    const state =
+      await res.json();
 
-    await new Promise(r=>
-      setTimeout(r,1000)
-    );
+    if(
+      state.active &&
+      !started &&
+      Number(state.endTime) > 0
+    ){
+
+      started = true;
+
+      document
+        .getElementById("timer")
+        .style.fontSize =
+          "90px";
+
+      startTimer(
+        Number(state.endTime)
+      );
+
+    }
+
+    if(
+      !state.active &&
+      (
+        document
+          .getElementById("running")
+          .style.display === "flex"
+      )
+    ){
+
+      location.reload();
+
+    }
+
+  }catch(err){
+
+    console.log(err);
 
   }
 
-  document.getElementById("timer")
-    .textContent = "START";
-
-  await new Promise(r=>
-    setTimeout(r,1000)
-  );
-
-  document.getElementById("timer")
-    .style.fontSize = "90px";
-
 }
-}
+
+setInterval(
+  watchSystem,
+  200
+);
 
 </script>
