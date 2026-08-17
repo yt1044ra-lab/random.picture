@@ -205,7 +205,7 @@ TIME OVER
 <script>
 
 const SYSTEM_URL =
-"https://script.google.com/macros/s/AKfycby5CFBJnb6iIUZexVPDaut5_lriD2k3ebFsjf5nyOfuNBTWAZzsKPWixfGBKIf9JAr2/exec";
+"https://script.google.com/macros/s/AKfycby9_J7JGBynd9CSAFDS-6V3VjSXLwboQWhfYVq_SCstEFMhvU8Ewk7_T_t6xMvSqsby/exec";
 
 let missionStarted = false;
 let timerInterval = null;
@@ -216,8 +216,9 @@ const messages = [
 "カウントダウンが終わるまでに解除するか脱出してください。"
 ];
 
-async function checkSystem(){
-
+async function startMission(
+  image
+)
   try{
 
     const res =
@@ -238,10 +239,8 @@ async function checkSystem(){
       missionStarted = true;
 
       startMission(
-        state.image,
-        Number(state.endTime)
+      state.image
       );
-
     }
 
     if(
@@ -285,18 +284,16 @@ async function startMission(
    const realEndTime =
    Date.now() + 60000;
 
-   await fetch(
+  await fetch(
   SYSTEM_URL,
   {
     method:"POST",
     body:JSON.stringify({
-      action:"start",
-      group:0,
-      image:image,
+      action:"setEndTime",
       endTime:realEndTime
     })
-    }
-    );
+  }
+);
 
     document
   .getElementById("mainScreen")
